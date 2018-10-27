@@ -2,6 +2,7 @@ import os.path
 import argparse
 
 from scryfall_api import *
+from database import *
 import boto3
 from PIL import Image
 from mtgsdk import Card
@@ -73,16 +74,9 @@ def translate_card(card_name, language='french'):
         return
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('img_name', type=str,
-                        help='The image of the MTG card to lookup')
-    args = parser.parse_args()
-
-    img_name = args.img_name
-
+def process_image(image_file):
     print("Resizing the image")
-    usable_image = resize_image(img_name)
+    usable_image = resize_image(image_file)
 
     # Call text recognition service
     print("Calling AWS Rekognition service for text detection")
@@ -102,6 +96,7 @@ if __name__ == '__main__':
         full_text += ' ' + text['DetectedText']
 
     print("Calling Comprehend AWS service to detect the language")
+    # Send the full text for better language detection
     card_language = detect_language(full_text)
 
     # Remove the last word of the first line, as it is the manacost
@@ -112,11 +107,55 @@ if __name__ == '__main__':
     card_name_en = translate_card(card_name,
                                   language=LANGUAGES_MAPPING[card_language])
 
-    # Look it up in scryfall API
+    # Check if this card already exists in our db
+    if card_exists(card_name_en):
+        print("Card {} already looked up, update quantity and skip".format(
+              card_name_en))
+        update_card_qty(card_name_en)
+    else:
+        # Look it up in scryfall API
+        try:
+            print("Finally fetching the card price from Scryfall API")
+            mtg_card = search_card(card_name_en)
+
+            price_eur = mtg_card['eur']
+            price_usd = mtg_card['usd']
+
+            print("Found {} at a price of {} EUR and {} USD".format(
+                mtg_card['name'], price_eur, price_usd))
+
+            insert_card(card_name_en, price_eur, price_usd)
+        except ScryfallAPIError as e:
+            print(e)
+
     try:
-        print("Finally fetching the card price from Scryfall API")
-        mtg_card = search_card(card_name_en)
-        print("Found {} at a price of {} EUR and {} USD".format(
-            mtg_card['name'], mtg_card['eur'], mtg_card['usd']))
-    except ScryfallAPIError as e:
+        f.close()
+        os.remove(usable_image)
+    except OSError as e:
         print(e)
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument('-img', type=str,
+                       help='The image of the MTG card to lookup')
+    group.add_argument('-dir', type=str,
+                       help='The folder where the images are stored')
+    parser.add_argument('-export', action='store_true',
+                        help='Exports the final results in csv')
+    args = parser.parse_args()
+
+    img_name = args.img
+    dir_name = args.dir
+
+    if dir_name:
+        for file in os.listdir(dir_name):
+            process_image(dir_name + '\\' + file)
+    elif img_name:
+        process_image(img_name)
+
+    if args.export:
+        csv_name = 'results.csv'
+        export_cards_as_csv(csv_name)
+        print("Results exported into {}".format(csv_name))

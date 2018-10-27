@@ -23,6 +23,6 @@ def search_card(card_name):
     elif r.status_code != 200:
         raise ScryfallAPIError(
             "Unknown error when searching for \"{}\" : {}".format(card_name,
-                                                               r.text))
+                                                                  r.text))
     else:
         return r.json()
