@@ -47,3 +47,6 @@ $ python database.py -reset
 
 ## About AWS
 You can create a 1-year free account for AWS [here](https://portal.aws.amazon.com/billing/signup#/start). You will also need to create access tokens and IAM users with access to Rekognition and Comprehend Services. Please refer to AWS doc mentioned previously.
+
+## Limitation
+This script can only fetch prices for the last edition of the card, there is no way for it to know the actual card's edition for now.
