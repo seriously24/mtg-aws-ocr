@@ -16,7 +16,7 @@ $ cd mtg-aws-ocr
 ```
 Install python dependencies
 ```bash
-$ pip install pillow, mtgsdk, boto3
+$ pip install -r requirements.txt
 ```
 Check that aws is correctly running and configured for your AWS account
 ```bash
