@@ -152,7 +152,7 @@ if __name__ == '__main__':
     if dir_name:
         for file in os.listdir(dir_name):
             print("Now processing {}".format(file))
-            process_image(dir_name + '\\' + file)
+            process_image(os.path.join(dir_name, file))
     elif img_name:
         process_image(img_name)
 
