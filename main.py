@@ -17,8 +17,9 @@ comprehend = boto3.client('comprehend')
 
 
 def resize_image(img):
-    """
-    For optimization purposes, we should resize images to acceptable sizes
+    """Correct the orientation of ``img`` based on EXIF data and save it.
+
+    The name suggests resizing but no resizing is currently performed.
     """
     img_name, img_ext = os.path.splitext(img)
     image = Image.open(img)
